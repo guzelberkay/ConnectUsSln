@@ -25,5 +25,10 @@ namespace ConnectUs.Data.Context
 
         public DbSet<OurServices> OurServices { get; set; }
 
+        protected override void  OnModelCreating(ModelBuilder builder)
+        {
+            builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+        }
+
     }
 }
