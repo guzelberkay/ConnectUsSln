@@ -9,46 +9,45 @@ using System.Threading.Tasks;
 
 namespace ConnectUs.Data.Repositories.Concretes
 {
-    public class Repository<T> : IRepository<T> where T : class, new()
+    public class Repository<T> : IRepository<T> where T : class
     {
-        private readonly AppDbContext dbContext;
+        protected readonly DbContext _context;
 
-        public Repository(AppDbContext dbContext)
+        public Repository(DbContext context)
         {
-            this.dbContext = dbContext;
+            _context = context;
         }
 
-        private DbSet<T> Table
+        public async Task<IEnumerable<T>> GetAllAsync()
         {
-            get => dbContext.Set<T>();
+            return await _context.Set<T>().ToListAsync();
         }
 
-        public async Task<List<T>> GetValuesAsync(Expression<Func<T, bool>> predicate = null, params Expression<Func<T, object>>[] includeProperties)
+        public async Task<T> GetByIdAsync(long id)
         {
-            IQueryable<T> query = Table;
-
-            // Apply predicate if provided
-            if (predicate != null)
-            {
-                query = query.Where(predicate);
-            }
-
-            // Apply include properties if provided
-            if (includeProperties.Any())
-            {
-                foreach (var includeProperty in includeProperties)
-                {
-                    query = query.Include(includeProperty);
-                }
-            }
-
-            return await query.ToListAsync();
+            return await _context.Set<T>().FindAsync(id);
         }
 
         public async Task AddAsync(T entity)
         {
-            await Table.AddAsync(entity);
-            await dbContext.SaveChangesAsync();
+            await _context.Set<T>().AddAsync(entity);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task UpdateAsync(T entity)
+        {
+            _context.Set<T>().Update(entity);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task DeleteAsync(long id)
+        {
+            var entity = await _context.Set<T>().FindAsync(id);
+            if (entity != null)
+            {
+                _context.Set<T>().Remove(entity);
+                await _context.SaveChangesAsync();
+            }
         }
     }
 }

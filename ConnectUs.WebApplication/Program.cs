@@ -1,7 +1,12 @@
 using ConnectUs.Data.Context;
+using ConnectUs.Data.Extensions;
+using ConnectUs.Data.Repositories.Concretes;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.LoadDataLayerExtensions(builder.Configuration);
+builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();

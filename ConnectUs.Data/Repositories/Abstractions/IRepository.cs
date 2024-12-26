@@ -7,12 +7,12 @@ using System.Threading.Tasks;
 
 namespace ConnectUs.Data.Repositories.Abstractions
 {
-    public interface IRepository<T> where T : class , new()
+    public interface IRepository<T> where T : class
     {
+        Task<IEnumerable<T>> GetAllAsync();
+        Task<T> GetByIdAsync(long id);
         Task AddAsync(T entity);
-
-        Task<List<T>> GetValuesAsync(Expression<Func<T, bool>> predicate = null, params Expression<Func<T, object>>[] includeProperties);
-
-        Task<T> GetAsync(Expression<Func<T, bool>> predicate = null, params Expression<Func<T, object>>[] includeProperties);
+        Task UpdateAsync(T entity);
+        Task DeleteAsync(long id);
     }
 }
