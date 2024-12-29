@@ -20,6 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\ConnectUs.Core\ConnectUs.Core.csproj" />
     <ProjectReference Include="..\ConnectUs.Data\ConnectUs.Data.csproj" />
   </ItemGroup>
 
