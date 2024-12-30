@@ -2,15 +2,16 @@
 using Microsoft.EntityFrameworkCore;
 using System.Threading.Tasks;
 using ConnectUs.Data.Repositories.Abstractions;
+using ConnectUs.Data.Context;
 
 namespace ConnectUs.Data.Repositories.Concretes
 {
     public class AuthRepository : IAuthRepository
     {
-        private readonly DbContext _context;
+        private readonly AppDbContext _context; // DbContext yerine AppDbContext kullanıyoruz
         private readonly DbSet<Auth> _authSet;
 
-        public AuthRepository(DbContext context)
+        public AuthRepository(AppDbContext context) // AppDbContext olarak düzelttik
         {
             _context = context;
             _authSet = _context.Set<Auth>();
@@ -34,20 +35,26 @@ namespace ConnectUs.Data.Repositories.Concretes
             return await _authSet.FirstOrDefaultAsync(auth => auth.Id == authId);
         }
 
+        // authId ile kullanıcıyı bulma (FindById metodu)
+        public async Task<Auth> FindByIdAsync(long authId)
+        {
+            return await _authSet.FindAsync(authId);
+        }
+
         // Kullanıcıyı güncelleme
         public async Task<Auth> UpdateAsync(Auth auth)
         {
-            var existingAuth = await _authSet.FindAsync(auth.Id);  // Önce var olup olmadığını kontrol et
+            var existingAuth = await _authSet.FindAsync(auth.Id); // Önce var olup olmadığını kontrol et
             if (existingAuth == null)
             {
-                return null;  // Eğer kullanıcı bulunmazsa null döner
+                return null; // Eğer kullanıcı bulunmazsa null döner
             }
 
             // Eğer kullanıcı bulunduysa, mevcut kaydı güncelle
             _context.Entry(existingAuth).CurrentValues.SetValues(auth);
             await _context.SaveChangesAsync(); // Değişiklikleri kaydet
 
-            return existingAuth;  // Güncellenmiş kullanıcıyı döner
+            return existingAuth; // Güncellenmiş kullanıcıyı döner
         }
 
         // Şifre sıfırlama kodu ile kullanıcıyı bulma

@@ -54,7 +54,7 @@ namespace ConnectUs.Data.Migrations
                     Email = table.Column<string>(type: "nvarchar(255)", nullable: false),
                     Password = table.Column<string>(type: "longtext", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Code = table.Column<string>(type: "longtext", nullable: false)
+                    Code = table.Column<string>(type: "longtext", nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     CodeTimestamp = table.Column<long>(type: "bigint", nullable: false)
                 },

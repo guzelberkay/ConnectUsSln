@@ -2,11 +2,6 @@
 using ConnectUs.Data.Repositories.Concretes;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ConnectUs.Data.Extensions
 {
@@ -14,7 +9,9 @@ namespace ConnectUs.Data.Extensions
     {
         public static IServiceCollection LoadDataLayerExtensions(this IServiceCollection services, IConfiguration config)
         {
-            services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+            // Jenerik olmayan bağımlılıkları kaydetme
+          //  services.AddScoped<IAuthRepository, AuthRepository>();
+
             return services;
         }
     }

@@ -60,7 +60,6 @@ namespace ConnectUs.Data.Migrations
                         .HasColumnType("bigint");
 
                     b.Property<string>("Code")
-                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<long>("CodeTimestamp")

@@ -16,7 +16,13 @@ public class AuthService : IAuthService
     private readonly AuthRepository _authRepository;
     private readonly PasswordEncoder _passwordEncoder;
     private readonly JwtTokenManager _jwtTokenManager;
-   
+
+    public AuthService(AuthRepository authRepository, PasswordEncoder passwordEncoder, JwtTokenManager jwtTokenManager)
+    {
+        _authRepository = authRepository ?? throw new ArgumentNullException(nameof(authRepository)); // Add null check
+        _passwordEncoder = passwordEncoder ?? throw new ArgumentNullException(nameof(passwordEncoder)); // Null check for _passwordEncoder
+        _jwtTokenManager = jwtTokenManager ?? throw new ArgumentNullException(nameof(jwtTokenManager)); // Null check for _jwtTokenManager
+    }
     public async Task<string> Login(LoginRequestDTO dto)
     {
         // E-posta ile Auth nesnesini veritabanından al
@@ -92,31 +98,38 @@ public class AuthService : IAuthService
         return true; // Şifre başarıyla sıfırlandı
     }
 
-
-    public Task<bool> CheckEmailExists(string email)
+    // Token'den kimlik bilgilerini alarak Auth nesnesini döndürür.
+    public async Task<Auth> GetAuthFromToken(string token)
     {
-        throw new NotImplementedException();
+        // Token'den AuthId'yi çıkar.
+        long authId = await ExtractAuthIdFromToken(token);
+
+        // Çıkarılan AuthId'ye göre Auth nesnesini bul.
+        var auth = await _authRepository.FindByIdAsync(authId);
+
+        // Eğer Auth bulunamazsa, özel bir hata fırlat.
+        if (auth == null)
+        {
+            throw new GeneralException(ErrorType.AUTH_NOT_FOUND);
+        }
+
+        return auth;
     }
 
-    public Task<string> FindEmailByAuthId(long authId)
+    // Token'den AuthId'yi çıkaran yardımcı metot.
+    public async Task<long> ExtractAuthIdFromToken(string token)
     {
-        throw new NotImplementedException();
+        // JwtTokenManager aracılığıyla token'den AuthId'yi çıkarmayı dener.
+        var authIdOptional = _jwtTokenManager.GetAuthIdFromToken(token);
+
+        // AuthId mevcutsa döndür, aksi halde bir hata fırlat.
+        if (authIdOptional.HasValue)
+        {
+            return await Task.FromResult(authIdOptional.Value); // Asenkron metot olduğu için Task ile döndürülüyor
+        }
+        else
+        {
+            throw new GeneralException(ErrorType.INVALID_TOKEN);
+        }
     }
-
-
-    public Task<Auth> GetAuthFromToken(string token)
-    {
-        throw new NotImplementedException();
-    }
-
-    
-
-    public Task<bool> LoginProfileManagement(string password, string token)
-    {
-        throw new NotImplementedException();
-    }
-   
-
-
-
 }

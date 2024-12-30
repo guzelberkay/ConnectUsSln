@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ConnectUs.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20241224183010_Initial")]
+    [Migration("20241230123212_Initial")]
     partial class Initial
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -62,7 +62,6 @@ namespace ConnectUs.Data.Migrations
                         .HasColumnType("bigint");
 
                     b.Property<string>("Code")
-                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<long>("CodeTimestamp")

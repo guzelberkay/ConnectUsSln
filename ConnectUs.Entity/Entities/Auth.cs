@@ -20,14 +20,14 @@ namespace ConnectUs.Entity.Entities
         [Required(ErrorMessage = "Email is required.")] // Zorunlu alan
         [EmailAddress(ErrorMessage = "Invalid email format.")] // Email format kontrolü
         [Column(TypeName = "nvarchar(255)")] // Kolon tipi
-        public string Email { get; set; }
+        public string Email { get; set; } 
 
         // Şifre alanı
         [Required(ErrorMessage = "Password is required.")]
         public string Password { get; set; }
 
         // Code alanı (isteğe bağlı)
-        public string Code { get; set; }
+        public string? Code { get; set; }
 
         // Zaman damgası
         public long CodeTimestamp { get; set; }
