@@ -4,132 +4,183 @@ using ConnectUs.Data.Repositories.Abstractions;
 using ConnectUs.Data.Repositories.Concretes;
 using ConnectUs.Entity.Dto.request;
 using ConnectUs.Entity.Entities;
+using ConnectUs.Entity.Model;
 using ConnectUs.Service.Services.Abstractions;
 using static ConnectUs.Core.Utilities.CodeGenerator;
 
-namespace ConnectUs.Service.Services.Concrete;
-
-
-public class AuthService : IAuthService
+namespace ConnectUs.Service.Services.Concrete
 {
-
-    private readonly AuthRepository _authRepository;
-    private readonly PasswordEncoder _passwordEncoder;
-    private readonly JwtTokenManager _jwtTokenManager;
-
-    public AuthService(AuthRepository authRepository, PasswordEncoder passwordEncoder, JwtTokenManager jwtTokenManager)
+    public class AuthService : IAuthService
     {
-        _authRepository = authRepository ?? throw new ArgumentNullException(nameof(authRepository)); // Add null check
-        _passwordEncoder = passwordEncoder ?? throw new ArgumentNullException(nameof(passwordEncoder)); // Null check for _passwordEncoder
-        _jwtTokenManager = jwtTokenManager ?? throw new ArgumentNullException(nameof(jwtTokenManager)); // Null check for _jwtTokenManager
-    }
-    public async Task<string> Login(LoginRequestDTO dto)
-    {
-        // E-posta ile Auth nesnesini veritabanından al
-        var auth = await _authRepository.FindByEmailAsync(dto.Email); // Veritabanından e-posta ile kullanıcıyı alıyoruz
+        private readonly IAuthRepository _authRepository;
+        private readonly PasswordEncoder _passwordEncoder;
+        private readonly JwtTokenManager _jwtTokenManager;
+        private readonly IEmailService _emailService;
 
-        // Kullanıcı bulunamadıysa veya şifre yanlışsa hata fırlat
-        if (auth == null)
+        public AuthService(IAuthRepository authRepository, PasswordEncoder passwordEncoder, JwtTokenManager jwtTokenManager)
         {
-            throw new GeneralException(ErrorType.EMAIL_OR_PASSWORD_WRONG); // Kullanıcı bulunamadı veya şifre yanlış
+            _authRepository = authRepository ?? throw new ArgumentNullException(nameof(authRepository));
+            _passwordEncoder = passwordEncoder ?? throw new ArgumentNullException(nameof(passwordEncoder));
+            _jwtTokenManager = jwtTokenManager ?? throw new ArgumentNullException(nameof(jwtTokenManager));
         }
 
-        // Sağlanan şifreyi veritabanındaki şifreyle karşılaştır
-        bool passwordMatches = _passwordEncoder.Matches(dto.Password, auth.Password); // Şifre kontrolü yapılıyor
-
-        if (!passwordMatches)
+        public async Task<string> Login(LoginRequestDTO dto)
         {
-            throw new GeneralException(ErrorType.EMAIL_OR_PASSWORD_WRONG); // Şifre yanlış
+            var auth = await _authRepository.FindByEmailAsync(dto.Email);
+
+            if (auth == null)
+            {
+                throw new GeneralException(ErrorType.EMAIL_OR_PASSWORD_WRONG);
+            }
+
+            bool passwordMatches = _passwordEncoder.Matches(dto.Password, auth.Password);
+
+            if (!passwordMatches)
+            {
+                throw new GeneralException(ErrorType.PASSWORD_WRONG);
+            }
+
+            string token = await _jwtTokenManager.GenerateToken(auth.Id);
+
+            if (string.IsNullOrEmpty(token))
+            {
+                throw new GeneralException(ErrorType.TOKEN_CREATION_FAILED);
+            }
+
+            return token;
         }
 
-        // Kimlik doğrulanan kullanıcı için token oluştur
-        string token = _jwtTokenManager.CreateToken(auth.Id); // Token oluşturma işlemi senkron olduğu için await gerekmez
 
-        // Token oluşturulamadıysa hata fırlat
-        if (string.IsNullOrEmpty(token))
+        public async Task<bool> ResetPassword(ResetPasswordRequestDTO dto)
         {
-            throw new GeneralException(ErrorType.TOKEN_CREATION_FAILED); // Token oluşturulamadı
+            var auth = await _authRepository.FindByCodeAsync(dto.Code);
+
+            if (auth == null)
+            {
+                throw new GeneralException(ErrorType.USER_NOT_FOUND);
+            }
+
+            if (!dto.NewPassword.Equals(dto.RePassword))
+            {
+                throw new GeneralException(ErrorType.PASSWORD_MISMATCH);
+            }
+
+            DateTime timestamp;
+            try
+            {
+                timestamp = DateTimeOffset.FromUnixTimeSeconds(auth.CodeTimestamp).DateTime;
+            }
+            catch (Exception ex)
+            {
+                throw new GeneralException(ErrorType.INTERNAL_SERVER_ERROR);
+            }
+
+            var resetCode = new ResetCode(auth.Code, timestamp);
+            if (resetCode.IsExpired())
+            {
+                throw new GeneralException(ErrorType.EXPIRED_RESET_CODE);
+            }
+
+            var encodedPassword = _passwordEncoder.Encode(dto.NewPassword);
+            auth.Password = encodedPassword;
+
+            await _authRepository.SaveAsync(auth);
+
+            return true;
         }
 
-        return token; // Token başarıyla oluşturulursa geri döndürülür
-    }
-
-    public async Task<bool> ResetPassword(ResetPasswordRequestDTO dto)
-    {
-        // Şifre sıfırlama kodunu kullanıcıyla eşleştiriyoruz
-        var auth = await _authRepository.FindByCodeAsync(dto.Code);  // Asenkron işlemi bekliyoruz
-
-        if (auth == null)
+        public async Task<Auth> GetAuthFromToken(string token)
         {
-            throw new GeneralException(ErrorType.USER_NOT_FOUND); // Kullanıcı bulunamadı
+            long authId = await ExtractAuthIdFromToken(token);
+
+            var auth = await _authRepository.FindByIdAsync(authId);
+
+            if (auth == null)
+            {
+                throw new GeneralException(ErrorType.AUTH_NOT_FOUND);
+            }
+
+            return auth;
         }
 
-        // Şifreler uyuşmuyorsa hata fırlatıyoruz
-        if (!dto.NewPassword.Equals(dto.RePassword))
+        public async Task<long> ExtractAuthIdFromToken(string token)
         {
-            throw new GeneralException(ErrorType.PASSWORD_MISMATCH); // Şifreler uyuşmuyor
+            var authIdOptional = _jwtTokenManager.GetAuthIdFromToken(token);
+
+            if (authIdOptional.HasValue)
+            {
+                return await Task.FromResult(authIdOptional.Value);
+            }
+            else
+            {
+                throw new GeneralException(ErrorType.INVALID_TOKEN);
+            }
         }
 
-        // Convert long (timestamp) to DateTime
-        DateTime timestamp;
-        try
+        public async Task<string> ForgetPasswordAsync(string email)
         {
-            timestamp = DateTimeOffset.FromUnixTimeSeconds(auth.CodeTimestamp).DateTime;  // long timestamp'ı DateTime'a çeviriyoruz
+            // Şifre sıfırlama kodunu üret
+            var resetCode = CodeGenerator.GenerateResetPasswordCode();
+            Console.WriteLine("Generated Reset Code: " + resetCode.Code); // Kodun doğru üretildiğini logla
+
+            // MailModel oluştur
+            var mailModel = new MailModel
+            {
+                Email = email,
+                Code = resetCode.Code
+            };
+
+            // Kullanıcıyı veritabanından bul
+            var auth = await _authRepository.FindByEmailAsync(email)
+                ?? throw new GeneralException(ErrorType.AUTH_NOT_FOUND); // Eğer kullanıcı bulunmazsa hata fırlat
+
+            Console.WriteLine(auth);
+
+            // Kod süresi dolmuşsa, veritabanındaki kodu sil
+            if (resetCode.IsExpired())
+            {
+                // Silme işlemi yapılabilir
+                auth.Code = null;
+                auth.CodeTimestamp = 0;
+
+                await _authRepository.SaveAsync(auth); // Veritabanında güncelleme yap
+
+                // Kullanıcıya bilgi verme
+                throw new GeneralException(ErrorType.EXPIRED_RESET_CODE); // Kodun süresi dolmuş, hata fırlat
+            }
+
+            // Kullanıcıyı güncelle
+            auth.Code = mailModel.Code;  // Kod bilgisi
+            auth.CodeTimestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(); // Zaman damgası
+
+            try
+            {
+                // Veritabanını kaydet
+                await _authRepository.SaveAsync(auth);
+                Console.WriteLine("Auth record updated successfully with reset code."); // Veritabanı kaydının başarılı olduğunu logla
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e); // Veritabanı hatası varsa yazdır
+                throw new GeneralException(ErrorType.INTERNAL_SERVER_ERROR); // Hata durumunda genel hata fırlat
+            }
+
+            // E-posta gönderimi
+            try
+            {
+                await _emailService.SendMailAsync(mailModel);
+                Console.WriteLine("Reset code email sent to: " + email); // E-posta gönderiminin başarılı olduğunu logla
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e); // E-posta gönderimi hatası
+                throw new GeneralException(ErrorType.EMAIL_SEND_FAILED); // E-posta hatası durumunda hata fırlat
+            }
+
+            // Şifre sıfırlama kodu gönderildi mesajı
+            return $"Şifre yenileme kodunuz {email} adresine gönderildi.";
         }
-        catch (Exception ex)
-        {
-            throw new GeneralException(ErrorType.INTERNAL_SERVER_ERROR); // Eğer dönüştürme işlemi başarısız olursa hata fırlatıyoruz
-        }
 
-        // Reset kodunun süresini kontrol ediyoruz
-        var resetCode = new ResetCode(auth.Code, timestamp); // CodeTimestamp burada DateTime türünde
-        if (resetCode.IsExpired())
-        {
-            throw new GeneralException(ErrorType.EXPIRED_RESET_CODE);  // Token süresi geçmişse hata ver
-        }
 
-        // Yeni şifreyi şifreleyip kaydediyoruz
-        var encodedPassword = _passwordEncoder.Encode(dto.NewPassword); // Şifreyi şifrele
-        auth.Password = encodedPassword;  // Şifreyi güncelle
-
-        // Yeni şifreyi asenkron olarak kaydet
-        await _authRepository.SaveAsync(auth);
-
-        return true; // Şifre başarıyla sıfırlandı
-    }
-
-    // Token'den kimlik bilgilerini alarak Auth nesnesini döndürür.
-    public async Task<Auth> GetAuthFromToken(string token)
-    {
-        // Token'den AuthId'yi çıkar.
-        long authId = await ExtractAuthIdFromToken(token);
-
-        // Çıkarılan AuthId'ye göre Auth nesnesini bul.
-        var auth = await _authRepository.FindByIdAsync(authId);
-
-        // Eğer Auth bulunamazsa, özel bir hata fırlat.
-        if (auth == null)
-        {
-            throw new GeneralException(ErrorType.AUTH_NOT_FOUND);
-        }
-
-        return auth;
-    }
-
-    // Token'den AuthId'yi çıkaran yardımcı metot.
-    public async Task<long> ExtractAuthIdFromToken(string token)
-    {
-        // JwtTokenManager aracılığıyla token'den AuthId'yi çıkarmayı dener.
-        var authIdOptional = _jwtTokenManager.GetAuthIdFromToken(token);
-
-        // AuthId mevcutsa döndür, aksi halde bir hata fırlat.
-        if (authIdOptional.HasValue)
-        {
-            return await Task.FromResult(authIdOptional.Value); // Asenkron metot olduğu için Task ile döndürülüyor
-        }
-        else
-        {
-            throw new GeneralException(ErrorType.INVALID_TOKEN);
-        }
     }
 }

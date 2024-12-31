@@ -1,5 +1,6 @@
 ﻿using ConnectUs.Core.Exceptions;
 using ConnectUs.Entity.Dto.request;
+using ConnectUs.Entity.Dto.Request;
 using ConnectUs.Service.Services.Abstractions;
 using Microsoft.AspNetCore.Mvc;
 
@@ -47,6 +48,25 @@ namespace ConnectUs.WebApplication.Controller
             {
                 var result = await _authService.ResetPassword(dto);
                 return Ok(new { Success = result });
+            }
+            catch (GeneralException ex)
+            {
+                return BadRequest(new { Error = ex.Message, ErrorCode = ex.ErrorType });
+            }
+        }
+
+        /// <summary>
+        /// Şifre sıfırlama kodu gönderme işlemi
+        /// </summary>
+        /// <param name="email">Kullanıcı e-posta adresi</param>
+        /// <returns>Başarılı işlemde şifre sıfırlama kodu gönderildi mesajı</returns>
+        [HttpPost("forget-password")]
+        public async Task<IActionResult> ForgetPassword(string email)
+        {
+            try
+            {
+                var result = await _authService.ForgetPassword(email);
+                return Ok(new { Message = result });
             }
             catch (GeneralException ex)
             {

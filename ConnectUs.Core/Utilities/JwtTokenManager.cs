@@ -1,4 +1,5 @@
-﻿using Microsoft.IdentityModel.Tokens;
+﻿using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -6,210 +7,110 @@ using System.Text;
 
 namespace ConnectUs.Core.Utilities
 {
-    public class JwtTokenManager
+    public class JwtTokenManager : ITokenService
     {
-        private readonly string _secretKey;
-        private readonly string _issuer;
+     
+
+        private readonly JwtSettings _jwtSettings;
         private readonly long _tokenExpirationInMilliseconds = 1000L * 60 * 60; // 1 hour
 
-        public JwtTokenManager(string secretKey, string issuer)
+        public JwtTokenManager(IOptions<JwtSettings> jwtSettings)
         {
-            _secretKey = secretKey;
-            _issuer = issuer;
+            _jwtSettings = jwtSettings.Value ?? throw new ArgumentNullException(nameof(jwtSettings));
         }
 
-        // Token oluşturma (authId ile)
-        public string CreateToken(long authId)
+        // Token oluşturma   public Task<String> GenerateToken(GenerateTokenRequest request)
+        public Task<string> GenerateToken(long authId)
+        {
+            // Hardcoded secret key, issuer, and audience
+            string secretKey = "j2G79NLkltojnpr1dlY0hCUrKrDdH7tyEeBkz2VNNVB2IDDAUK";
+            string validIssuer = "java14";
+            
+
+            if (string.IsNullOrEmpty(secretKey))
+            {
+                throw new InvalidOperationException("Secret key is not configured.");
+            }
+
+            // Create the symmetric security key
+            SymmetricSecurityKey symmetricSecurityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
+
+            var dateTimeNow = DateTime.UtcNow;
+
+            // Create the JWT token
+            JwtSecurityToken jwt = new JwtSecurityToken(
+                issuer: validIssuer,
+                claims: new List<Claim> {
+            new Claim("authId", authId.ToString()) // Ensure that authId is passed as string
+                },
+                notBefore: dateTimeNow,
+                expires: dateTimeNow.Add(TimeSpan.FromMinutes(500)),
+                signingCredentials: new SigningCredentials(symmetricSecurityKey, SecurityAlgorithms.HmacSha256)
+            );
+
+            // Return the generated token as a string
+            return Task.FromResult(new JwtSecurityTokenHandler().WriteToken(jwt));
+        }
+
+
+
+
+        // Token doğrulama
+        public ClaimsPrincipal ValidateToken(string token)
         {
             try
             {
-                var claims = new[] {
-            new Claim("authId", authId.ToString())  // Kullanıcı kimliği claim olarak ekleniyor
-        };
-
-                var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secretKey));
-                var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha512Signature);
-
-                var token = new JwtSecurityToken(
-                    issuer: _issuer,
-                    audience: null,
-                    claims: claims,
-                    expires: DateTime.Now.AddMilliseconds(_tokenExpirationInMilliseconds),
-                    signingCredentials: credentials
-                );
-
-                return new JwtSecurityTokenHandler().WriteToken(token); // Token oluşturuluyor ve geri döndürülüyor
-            }
-            catch (Exception)
-            {
-                return null; // Hata oluşursa null döndürülür
-            }
-        }
-
-
-        // Token doğrulama ve authId alma
-        public long? ValidateToken(string token)
-        {
-            try
-            {
-                var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secretKey));
                 var tokenHandler = new JwtSecurityTokenHandler();
+                var validationParameters = CreateTokenValidationParameters();
 
-                var tokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuer = true,
-                    ValidIssuer = _issuer,
-                    ValidateAudience = false,
-                    ValidateLifetime = true,
-                    IssuerSigningKey = securityKey
-                };
-
-                // Token doğrulama
-                var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out var validatedToken);
-
-                if (principal == null)
-                    return null;
-
-                // authId değerini almak
-                var authIdClaim = principal.FindFirst("authId");
-                return authIdClaim != null ? Convert.ToInt64(authIdClaim.Value) : (long?)null;
+                return tokenHandler.ValidateToken(token, validationParameters, out _);
             }
-            catch (Exception)
+            catch
             {
                 return null;
             }
         }
 
-        // Token'dan authId almak
+        // authId almak
         public long? GetAuthIdFromToken(string token)
         {
-            try
-            {
-                var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secretKey));
-                var tokenHandler = new JwtSecurityTokenHandler();
-
-                var tokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuer = true,
-                    ValidIssuer = _issuer,
-                    ValidateAudience = false,
-                    ValidateLifetime = true,
-                    IssuerSigningKey = securityKey
-                };
-
-                // Token doğrulama
-                var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out var validatedToken);
-
-                if (principal == null)
-                    return null;
-
-                // authId değerini almak
-                var authIdClaim = principal.FindFirst("authId");
-                return authIdClaim != null ? Convert.ToInt64(authIdClaim.Value) : (long?)null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            var principal = ValidateToken(token);
+            return principal?.FindFirst("authId")?.Value != null
+                ? Convert.ToInt64(principal.FindFirst("authId").Value)
+                : (long?)null;
         }
 
-        // Token'dan ID almak
-        public long? GetIdFromToken(string token)
-        {
-            try
-            {
-                var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secretKey));
-                var tokenHandler = new JwtSecurityTokenHandler();
-
-                var tokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuer = true,
-                    ValidIssuer = _issuer,
-                    ValidateAudience = false,
-                    ValidateLifetime = true,
-                    IssuerSigningKey = securityKey
-                };
-
-                // Token doğrulama
-                var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out var validatedToken);
-
-                if (principal == null)
-                    throw new Exception("Invalid token.");
-
-                // authId değerini almak
-                var authIdClaim = principal.FindFirst("authId");
-                if (authIdClaim == null)
-                    throw new Exception("Authentication ID not found in token.");
-
-                return Convert.ToInt64(authIdClaim.Value);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-                throw new Exception("Invalid token or token verification failed.");
-            }
-        }
-
-        // Şifre sıfırlama token'ı oluşturma
-        public string CreatePasswordResetToken(string email)
-        {
-            try
-            {
-                var claims = new[]
-                {
-                    new Claim("email", email)
-                };
-
-                var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secretKey));
-                var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha512Signature);
-
-                var token = new JwtSecurityToken(
-                    issuer: _issuer,
-                    audience: null,
-                    claims: claims,
-                    expires: DateTime.Now.AddMilliseconds(_tokenExpirationInMilliseconds),
-                    signingCredentials: credentials
-                );
-
-                return new JwtSecurityTokenHandler().WriteToken(token);
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        // Token'dan email almak
+        // Email almak
         public string GetEmailFromToken(string token)
         {
-            try
+            var principal = ValidateToken(token);
+            return principal?.FindFirst("email")?.Value;
+        }
+
+       
+
+        // Genel hata mesajları için bir yardımcı metot
+        private Exception CreateTokenException() =>
+            new Exception("Invalid token or token verification failed.");
+
+        // İmzalama bilgileri oluşturma
+        private SigningCredentials CreateSigningCredentials()
+        {
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.SecretKey));
+            return new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha512Signature);
+        }
+
+        // Token doğrulama parametreleri oluşturma
+        private TokenValidationParameters CreateTokenValidationParameters()
+        {
+            return new TokenValidationParameters
             {
-                var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secretKey));
-                var tokenHandler = new JwtSecurityTokenHandler();
-
-                var tokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuer = true,
-                    ValidIssuer = _issuer,
-                    ValidateAudience = false,
-                    ValidateLifetime = true,
-                    IssuerSigningKey = securityKey
-                };
-
-                // Token doğrulama
-                var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out var validatedToken);
-
-                if (principal == null)
-                    throw new Exception("Invalid token.");
-
-                // email değerini almak
-                var emailClaim = principal.FindFirst("email");
-                return emailClaim?.Value;
-            }
-            catch (Exception)
-            {
-                throw new Exception("Invalid token or token verification failed.");
-            }
+                ValidateIssuer = true,
+                ValidIssuer = _jwtSettings.Issuer,
+                ValidateAudience = false,
+                ValidateLifetime = true,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.SecretKey))
+            };
         }
     }
 }

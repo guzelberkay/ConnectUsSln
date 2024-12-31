@@ -12,6 +12,9 @@ namespace ConnectUs.Service.Services.Abstractions
         // Şifre sıfırlama işlevi
         Task<bool> ResetPassword(ResetPasswordRequestDTO dto);
 
+        // Şifre unutma işlevi
+        Task<string> ForgetPassword(string email);
+
         // Token'den Auth bilgisi alma işlevi
         Task<Auth> GetAuthFromToken(string token);
 
