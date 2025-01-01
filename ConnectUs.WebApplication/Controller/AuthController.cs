@@ -1,6 +1,5 @@
 ﻿using ConnectUs.Core.Exceptions;
 using ConnectUs.Entity.Dto.request;
-using ConnectUs.Entity.Dto.Request;
 using ConnectUs.Service.Services.Abstractions;
 using Microsoft.AspNetCore.Mvc;
 
@@ -61,11 +60,11 @@ namespace ConnectUs.WebApplication.Controller
         /// <param name="email">Kullanıcı e-posta adresi</param>
         /// <returns>Başarılı işlemde şifre sıfırlama kodu gönderildi mesajı</returns>
         [HttpPost("forget-password")]
-        public async Task<IActionResult> ForgetPassword(string email)
+        public async Task<IActionResult> ForgetPasswordAsync(string email)
         {
             try
             {
-                var result = await _authService.ForgetPassword(email);
+                var result = await _authService.ForgetPasswordAsync(email);
                 return Ok(new { Message = result });
             }
             catch (GeneralException ex)

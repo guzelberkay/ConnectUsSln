@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ConnectUs.Entity.Model
 {
@@ -25,13 +21,21 @@ namespace ConnectUs.Entity.Model
             private string _email;
             private string _code;
 
-            public Builder Email(string email)
+            public Builder WithEmail(string email)
             {
-                _email = email;
+                try
+                {
+                    var mailAddress = new System.Net.Mail.MailAddress(email);
+                    _email = mailAddress.Address;
+                }
+                catch
+                {
+                    throw new ArgumentException("Invalid email format.");
+                }
                 return this;
             }
 
-            public Builder Code(string code)
+            public Builder WithCode(string code)
             {
                 _code = code;
                 return this;
@@ -39,8 +43,21 @@ namespace ConnectUs.Entity.Model
 
             public MailModel Build()
             {
+                if (string.IsNullOrWhiteSpace(_email))
+                {
+                    throw new ArgumentException("Email cannot be null or empty.");
+                }
+                if (string.IsNullOrWhiteSpace(_code))
+                {
+                    throw new ArgumentException("Code cannot be null or empty.");
+                }
                 return new MailModel(_email, _code);
             }
+        }
+
+        public override string ToString()
+        {
+            return $"Email: {Email}, Code: {Code}";
         }
     }
 }

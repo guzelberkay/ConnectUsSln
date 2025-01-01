@@ -17,11 +17,13 @@ namespace ConnectUs.Service.Services.Concrete
         private readonly JwtTokenManager _jwtTokenManager;
         private readonly IEmailService _emailService;
 
-        public AuthService(IAuthRepository authRepository, PasswordEncoder passwordEncoder, JwtTokenManager jwtTokenManager)
+        public AuthService(IAuthRepository authRepository, PasswordEncoder passwordEncoder, JwtTokenManager jwtTokenManager, IEmailService emailService)
         {
             _authRepository = authRepository ?? throw new ArgumentNullException(nameof(authRepository));
             _passwordEncoder = passwordEncoder ?? throw new ArgumentNullException(nameof(passwordEncoder));
             _jwtTokenManager = jwtTokenManager ?? throw new ArgumentNullException(nameof(jwtTokenManager));
+            _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
+
         }
 
         public async Task<string> Login(LoginRequestDTO dto)
@@ -65,21 +67,14 @@ namespace ConnectUs.Service.Services.Concrete
                 throw new GeneralException(ErrorType.PASSWORD_MISMATCH);
             }
 
-            DateTime timestamp;
-            try
-            {
-                timestamp = DateTimeOffset.FromUnixTimeSeconds(auth.CodeTimestamp).DateTime;
-            }
-            catch (Exception ex)
-            {
-                throw new GeneralException(ErrorType.INTERNAL_SERVER_ERROR);
-            }
 
-            var resetCode = new ResetCode(auth.Code, timestamp);
+            // Reset kodunun süresini kontrol ediyoruz
+            CodeGenerator.ResetCode resetCode = new CodeGenerator.ResetCode(auth.Code, auth.CodeTimestamp);
             if (resetCode.IsExpired())
             {
                 throw new GeneralException(ErrorType.EXPIRED_RESET_CODE);
             }
+            // Yeni şifreyi şifreleyip kaydediyoruz
 
             var encodedPassword = _passwordEncoder.Encode(dto.NewPassword);
             auth.Password = encodedPassword;
@@ -119,68 +114,81 @@ namespace ConnectUs.Service.Services.Concrete
 
         public async Task<string> ForgetPasswordAsync(string email)
         {
-            // Şifre sıfırlama kodunu üret
-            var resetCode = CodeGenerator.GenerateResetPasswordCode();
-            Console.WriteLine("Generated Reset Code: " + resetCode.Code); // Kodun doğru üretildiğini logla
-
-            // MailModel oluştur
-            var mailModel = new MailModel
-            {
-                Email = email,
-                Code = resetCode.Code
-            };
-
-            // Kullanıcıyı veritabanından bul
-            var auth = await _authRepository.FindByEmailAsync(email)
-                ?? throw new GeneralException(ErrorType.AUTH_NOT_FOUND); // Eğer kullanıcı bulunmazsa hata fırlat
-
-            Console.WriteLine(auth);
-
-            // Kod süresi dolmuşsa, veritabanındaki kodu sil
-            if (resetCode.IsExpired())
-            {
-                // Silme işlemi yapılabilir
-                auth.Code = null;
-                auth.CodeTimestamp = 0;
-
-                await _authRepository.SaveAsync(auth); // Veritabanında güncelleme yap
-
-                // Kullanıcıya bilgi verme
-                throw new GeneralException(ErrorType.EXPIRED_RESET_CODE); // Kodun süresi dolmuş, hata fırlat
-            }
-
-            // Kullanıcıyı güncelle
-            auth.Code = mailModel.Code;  // Kod bilgisi
-            auth.CodeTimestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(); // Zaman damgası
-
             try
             {
-                // Veritabanını kaydet
-                await _authRepository.SaveAsync(auth);
-                Console.WriteLine("Auth record updated successfully with reset code."); // Veritabanı kaydının başarılı olduğunu logla
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e); // Veritabanı hatası varsa yazdır
-                throw new GeneralException(ErrorType.INTERNAL_SERVER_ERROR); // Hata durumunda genel hata fırlat
-            }
+                // Şifre sıfırlama kodunu üret
+                var resetCode = CodeGenerator.GenerateResetPasswordCode();
+                if (resetCode == null || string.IsNullOrEmpty(resetCode.Code))
+                {
+                    throw new GeneralException(ErrorType.INTERNAL_SERVER_ERROR);
+                }
+                Console.WriteLine("Generated Reset Code: " + resetCode.Code);
 
-            // E-posta gönderimi
-            try
-            {
-                await _emailService.SendMailAsync(mailModel);
-                Console.WriteLine("Reset code email sent to: " + email); // E-posta gönderiminin başarılı olduğunu logla
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e); // E-posta gönderimi hatası
-                throw new GeneralException(ErrorType.EMAIL_SEND_FAILED); // E-posta hatası durumunda hata fırlat
-            }
+                // MailModel oluştur
+                var mailModel = new MailModel
+                {
+                    Email = email,
+                    Code = resetCode.Code
+                };
 
-            // Şifre sıfırlama kodu gönderildi mesajı
-            return $"Şifre yenileme kodunuz {email} adresine gönderildi.";
+                // Kullanıcıyı veritabanından bul
+                var auth = await _authRepository.FindByEmailAsync(email);
+                if (auth == null)
+                {
+                    throw new GeneralException(ErrorType.AUTH_NOT_FOUND);
+                }
+
+                // Kod süresi dolmuşsa, kodu temizle ve hata fırlat
+                if (resetCode.IsExpired())
+                {
+                    auth.Code = null;
+                    auth.CodeTimestamp = 0;
+
+                    await _authRepository.SaveAsync(auth); // Veritabanında güncelleme yap
+                    throw new GeneralException(ErrorType.EXPIRED_RESET_CODE);
+                }
+
+                // Kullanıcıyı güncelle
+                auth.Code = mailModel.Code;
+                auth.CodeTimestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+                try
+                {
+                    // Veritabanını kaydet
+                    await _authRepository.SaveAsync(auth);
+                    Console.WriteLine("Auth record updated successfully with reset code.");
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("Database error: " + e);
+                    throw new GeneralException(ErrorType.INTERNAL_SERVER_ERROR);
+                }
+
+                // E-posta gönderimi
+                try
+                {
+                    await _emailService.SendMailAsync(mailModel); // Asenkron mail gönderimi
+                    Console.WriteLine("Reset code email sent to: " + email);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("Email sending error: " + e);
+                    throw new GeneralException(ErrorType.EMAIL_SEND_FAILED);
+                }
+
+                // Şifre sıfırlama kodu gönderildi mesajı
+                return $"Şifre yenileme kodunuz {email} adresine gönderildi.";
+            }
+            catch (GeneralException ex)
+            {
+                Console.WriteLine($"Error: {ex.Message}");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Unexpected error: {ex}");
+                throw new GeneralException(ErrorType.INTERNAL_SERVER_ERROR);
+            }
         }
-
-
     }
 }
