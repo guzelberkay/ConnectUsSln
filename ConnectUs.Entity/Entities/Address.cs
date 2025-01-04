@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace ConnectUs.Entity.Entities
 {
     [Table("tbl_address")] // Veritabanı tablosu adı
-    public class Address  // "Adress" yerine "Address" olarak düzeltilmiştir.
+    public class Address  
     {
         // Primary Key
         [Key]
