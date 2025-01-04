@@ -6,6 +6,7 @@ using ConnectUs.Service.Services.Abstractions;
 using ConnectUs.Service.Services.Concrete;
 using ConnectUs.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,7 +20,7 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(
         builder.Configuration.GetConnectionString("DefaultConnection"),
-        new MySqlServerVersion(new Version(8, 0, 45))
+        new MySqlServerVersion(new Version(10, 11, 8))
     ));
 
 // JwtSettings'i appsettings.json'dan okuyup DI konteynerine ekle
