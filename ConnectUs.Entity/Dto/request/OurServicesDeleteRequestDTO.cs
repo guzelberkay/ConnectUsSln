@@ -1,0 +1,14 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace ConnectUs.Entity.Dto.request
+{
+    public class OurServicesDeleteRequestDTO
+    {
+        public string Token { get; set; }
+        public long OurServicesId { get; set; }
+    }
+}

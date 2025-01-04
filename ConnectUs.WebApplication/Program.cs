@@ -6,7 +6,6 @@ using ConnectUs.Service.Services.Abstractions;
 using ConnectUs.Service.Services.Concrete;
 using ConnectUs.Services;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -45,6 +44,9 @@ builder.Services.AddScoped<ICommentRepository, CommentRepository>();
 
 builder.Services.AddScoped<IProjectService, ProjectService>();
 builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
+
+builder.Services.AddScoped<IOurServicesService, OurServicesService>();
+builder.Services.AddScoped<IOurServicesRepository, OurServicesRepository>();
 
 builder.Services.AddScoped<PasswordEncoder>();
 
