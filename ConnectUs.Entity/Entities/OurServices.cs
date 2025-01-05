@@ -1,10 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ConnectUs.Entity.Entities
 {
@@ -17,20 +13,25 @@ namespace ConnectUs.Entity.Entities
         public long Id { get; set; }
 
         // Name
+        [Required] // Zorunlu alan
         public string Name { get; set; }
 
         // Type
+        [Required] // Zorunlu alan
         public string Type { get; set; }
 
         // File (byte array)
-        [Column(TypeName = "LONGBLOB")]  // Veritabanında binary veri olarak tutulmasını sağlar
+        [Required]
+        [Column(TypeName = "VARBINARY(MAX)")] // SQL Server için binary veri türü
         public byte[] File { get; set; }
 
         // Title
+        [Required]
         public string Title { get; set; }
 
         // Description
-        [Column(TypeName = "TEXT")] // Veritabanında TEXT türünde bir sütun oluşturulmasını sağlar
+        [Required]
+        [Column(TypeName = "NVARCHAR(MAX)")] // SQL Server'da uzun metin için uygun tür
         public string Description { get; set; }
 
         // Parametresiz constructor

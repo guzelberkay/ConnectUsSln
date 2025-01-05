@@ -6,9 +6,13 @@ using ConnectUs.Service.Services.Abstractions;
 using ConnectUs.Service.Services.Concrete;
 using ConnectUs.Services;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Loglama yapýlandýrmasý
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole(); // Konsola log yazdýrýr
+builder.Logging.AddDebug();   // Debug çýktýsýna log yazar
 
 // appsettings.json'u yükleme
 builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
@@ -18,9 +22,8 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 
 // DbContext yapýlandýrmasý
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseMySql(
-        builder.Configuration.GetConnectionString("DefaultConnection"),
-        new MySqlServerVersion(new Version(10, 11, 8))
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection")
     ));
 
 // JwtSettings'i appsettings.json'dan okuyup DI konteynerine ekle
@@ -58,6 +61,17 @@ builder.Services.AddTransient<IHostedService, DefaultUserSeederService>();
 builder.Services.AddSwaggerGen();
 builder.Services.AddControllersWithViews();
 
+// CORS yapýlandýrmasý
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowSpecificOrigin", policy =>
+    {
+        policy.WithOrigins("https://www.isttekzemin.com") // Ýzin verilen origin
+              .AllowAnyHeader()                           // Herhangi bir baþlýk
+              .AllowAnyMethod();                          // Herhangi bir HTTP metodu
+    });
+});
+
 var app = builder.Build();
 
 // Swagger'ý kullanmaya baþlýyoruz
@@ -67,12 +81,17 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+// HTTPS yönlendirmesi
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+
+// CORS'u etkinleþtir
+app.UseCors("AllowSpecificOrigin");
 
 app.UseRouting();
 app.UseAuthorization();
 
+// Varsayýlan route yapýlandýrmasý
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");

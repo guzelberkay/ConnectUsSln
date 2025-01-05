@@ -3,6 +3,7 @@ using System;
 using ConnectUs.Data.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -17,13 +18,17 @@ namespace ConnectUs.Data.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasAnnotation("ProductVersion", "6.0.0")
-                .HasAnnotation("Relational:MaxIdentifierLength", 64);
+                .HasAnnotation("Relational:MaxIdentifierLength", 128);
+
+            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder, 1L, 1);
 
             modelBuilder.Entity("ConnectUs.Entity.Entities.AboutUs", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"), 1L, 1);
 
                     b.Property<string>("Content")
                         .IsRequired()
@@ -40,9 +45,11 @@ namespace ConnectUs.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"), 1L, 1);
+
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Value")
                         .IsRequired()
@@ -59,8 +66,10 @@ namespace ConnectUs.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"), 1L, 1);
+
                     b.Property<string>("Code")
-                        .HasColumnType("longtext");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<long>("CodeTimestamp")
                         .HasColumnType("bigint");
@@ -71,7 +80,7 @@ namespace ConnectUs.Data.Migrations
 
                     b.Property<string>("Password")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
@@ -84,21 +93,23 @@ namespace ConnectUs.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"), 1L, 1);
+
                     b.Property<string>("CommentContent")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CompanyName")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<long>("ProjectId")
                         .HasColumnType("bigint");
@@ -108,7 +119,7 @@ namespace ConnectUs.Data.Migrations
 
                     b.Property<string>("Surname")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
@@ -121,25 +132,27 @@ namespace ConnectUs.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"), 1L, 1);
+
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("NVARCHAR(MAX)");
 
                     b.Property<byte[]>("File")
                         .IsRequired()
-                        .HasColumnType("LONGBLOB");
+                        .HasColumnType("VARBINARY(MAX)");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Title")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Type")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
@@ -152,13 +165,15 @@ namespace ConnectUs.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"), 1L, 1);
+
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Value")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
@@ -171,9 +186,11 @@ namespace ConnectUs.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"), 1L, 1);
+
                     b.Property<string>("Date")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Description")
                         .IsRequired()
@@ -181,11 +198,11 @@ namespace ConnectUs.Data.Migrations
 
                     b.Property<string>("Employer")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Location")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Title")
                         .IsRequired()
