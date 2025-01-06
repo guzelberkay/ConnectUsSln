@@ -70,10 +70,10 @@ namespace ConnectUs.Service.Services.Concrete
                 Id = service.Id,
                 Title = service.Title,
                 Description = service.Description,
-                PhotoUrl = $"/dev/v1/ourservice/image/{service.Id}"
+                PhotoUrl = $"https://api.isttekzemin.com/api/ourservices/image/{service.Id}"
             }).ToList();
         }
-
+    
         private long ExtractAuthIdFromToken(string token)
         {
             var authIdOptional = _jwtTokenManager.GetAuthIdFromToken(token);

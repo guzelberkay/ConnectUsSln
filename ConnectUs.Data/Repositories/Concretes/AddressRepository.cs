@@ -21,23 +21,18 @@ namespace ConnectUs.Data.Repositories.Concretes
             _addrssSet = _context.Set<Address>();
         }
 
-        public void Save(Address address)
+        public async Task SaveAsync(Address address)
         {
-            if (address.Id == 0) // Yeni bir adres ise
-            {
-                _context.Set<Address>().Add(address);
-            }
-            else // Var olan bir adresi güncelle
-            {
-                _context.Set<Address>().Update(address);
-            }
+            await _context.Set<Address>().AddAsync(address);
+          
 
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
         }
 
-        public Address? FindById(long id)
+
+        public async Task<Address> FindByIdAsync(long id)
         {
-            return _context.Set<Address>().FirstOrDefault(a => a.Id == id);
+            return await _addrssSet.FindAsync(id);
         }
 
         public List<Address> FindAll()
@@ -45,10 +40,10 @@ namespace ConnectUs.Data.Repositories.Concretes
             return _context.Set<Address>().ToList();
         }
 
-        public void Delete(Address address)
+        public async Task DeleteAsync(Address address)
         {
-            _context.Set<Address>().Remove(address);
-            _context.SaveChanges();
+            _addrssSet.Remove(address);
+            await _context.SaveChangesAsync();
         }
     }
 }

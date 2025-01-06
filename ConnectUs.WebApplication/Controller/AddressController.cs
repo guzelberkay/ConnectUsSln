@@ -1,7 +1,10 @@
-﻿using ConnectUs.Entity.Dto.request;
+﻿using ConnectUs.Core.Exceptions;
+using ConnectUs.Entity.Dto.request;
 using ConnectUs.Entity.Entities;
 using ConnectUs.Service.Services.Abstractions;
+using ConnectUs.Service.Services.Concrete;
 using Microsoft.AspNetCore.Mvc;
+using static com.sun.net.httpserver.Authenticator;
 
 namespace ConnectUs.WebApplication.Controller
 {
@@ -23,67 +26,73 @@ namespace ConnectUs.WebApplication.Controller
         /// <param name="dto">Adres bilgileri</param>
         /// <returns>İşlem sonucu</returns>
         [HttpPost("save")]
-        public ActionResult Save([FromBody] AddressRequestDTO dto)
+        public async Task<IActionResult> Save([FromBody] AddressRequestDTO dto)
         {
+            if (dto == null)
+            {
+                return BadRequest(new ResponseDTO<bool>
+                {
+                    Data = false,
+                    Code = 400,
+                    Message = "Invalid address data provided."
+                });
+            }
+
             try
             {
-                var result = _addressService.Save(dto);
-                if (result)
+                var result = await _addressService.SaveAsync(dto);
+                return Ok(new ResponseDTO<bool>
                 {
-                    return Ok(new { message = "Address saved successfully" });
-                }
-                return BadRequest(new { message = "Failed to save address" });
+                    Data = result,
+                    Code = 200,
+                    Message = "Address successfully registered."
+                });
+            }
+            catch (GeneralException ex)
+            {
+                return BadRequest(new ResponseDTO<bool>
+                {
+                    Data = false,
+                    Code = 400,
+                    Message = $"Error saving address: {ex.Message}"
+                });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = ex.Message });
+                return StatusCode(500, new ResponseDTO<bool>
+                {
+                    Data = false,
+                    Code = 500,
+                    Message = $"An unexpected error occurred: {ex.Message}"
+                });
             }
         }
 
-        /// <summary>
-        /// Bir adresi siler.
-        /// </summary>
-        /// <param name="token">Kullanıcı token'ı</param>
-        /// <param name="id">Silinecek adres ID'si</param>
-        /// <returns>İşlem sonucu</returns>
-        [HttpDelete("delete/{id}")]
-        public ActionResult Delete(string token, long id)
-        {
-            try
-            {
-                var result = _addressService.Delete(token, id);
-                if (result)
-                {
-                    return Ok(new { message = "Address deleted successfully" });
-                }
-                return BadRequest(new { message = "Failed to delete address" });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = ex.Message });
-            }
-        }
 
-        /// <summary>
-        /// Adresi günceller.
-        /// </summary>
-        /// <param name="dto">Güncelleme bilgileri</param>
-        /// <returns>İşlem sonucu</returns>
-        [HttpPut("update")]
-        public ActionResult Update([FromBody] AddressUpdateRequestDTO dto)
+
+
+
+        [HttpDelete("delete")]
+        public async Task<IActionResult> Delete([FromQuery] string token, [FromQuery] long id)
         {
             try
             {
-                var result = _addressService.Update(dto);
-                if (result)
+                var success = await _addressService.DeleteAsync(token, id);
+                return Ok(new ResponseDTO<bool>
                 {
-                    return Ok(new { message = "Address updated successfully" });
-                }
-                return BadRequest(new { message = "Failed to update address" });
+                    Data = success,
+                    Code = 200,
+                    Message = success ? "Address successfully deleted" : "Address not found"
+                });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = ex.Message });
+                return BadRequest(new ResponseDTO<bool>
+                {
+                    Data = false,
+                    Code = 400,
+                    Message = $"Error deleting phone: {ex.Message}"
+                });
             }
         }
 

@@ -10,9 +10,9 @@ namespace ConnectUs.Service.Services.Abstractions
 {
     public interface IAddressService
     {
-        bool Save(AddressRequestDTO dto);
-        bool Delete(string token, long id);
-        bool Update(AddressUpdateRequestDTO dto);
+        Task<bool> SaveAsync(AddressRequestDTO dto);
+
+        Task<bool> DeleteAsync(string token, long id);
         List<Address> FindAll();
     }
 }

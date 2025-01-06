@@ -9,9 +9,10 @@ namespace ConnectUs.Data.Repositories.Abstractions
 {
     public interface IAddressRepository
     {
-        void Save(Address address); // Yeni bir adres kaydet
-        Address? FindById(long id); // Adresi ID'ye göre bul
+        Task SaveAsync(Address address); // Yeni bir adres kaydet
+        Task<Address> FindByIdAsync(long id);
         List<Address> FindAll(); // Tüm adresleri listele
-        void Delete(Address address); // Adresi sil
+        Task DeleteAsync(Address address);
+
     }
 }

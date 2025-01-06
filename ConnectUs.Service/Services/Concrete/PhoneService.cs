@@ -1,6 +1,7 @@
 ﻿using ConnectUs.Core.Exceptions;
 using ConnectUs.Core.Utilities;
 using ConnectUs.Data.Repositories.Abstractions;
+using ConnectUs.Data.Repositories.Concretes;
 using ConnectUs.Entity.Dto.request;
 using ConnectUs.Entity.Entities;
 using ConnectUs.Service.Services.Abstractions;
@@ -50,6 +51,7 @@ namespace ConnectUs.Service.Services.Concrete
             }
         }
 
+     
         public async Task<bool> DeleteAsync(string token, long id)
         {
             var authId = ExtractAuthIdFromToken(token);

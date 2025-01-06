@@ -1,6 +1,7 @@
 ﻿using ConnectUs.Core.Exceptions;
 using ConnectUs.Core.Utilities;
 using ConnectUs.Data.Repositories.Abstractions;
+using ConnectUs.Data.Repositories.Concretes;
 using ConnectUs.Entity.Dto.request;
 using ConnectUs.Entity.Entities;
 using ConnectUs.Service.Services.Abstractions;
@@ -21,10 +22,10 @@ namespace ConnectUs.Service.Services.Concrete
             _jwtTokenManager = jwtTokenManager;
         }
 
-        public bool Save(AddressRequestDTO dto)
+        public async Task<bool> SaveAsync(AddressRequestDTO dto)
         {
             var authId = ExtractAuthIdFromToken(dto.Token);
-            var auth = _authRepository.FindByIdAsync(authId) ?? throw new GeneralException(ErrorType.AUTH_NOT_FOUND);
+            var auth = await _authRepository.FindByIdAsync(authId) ?? throw new GeneralException(ErrorType.AUTH_NOT_FOUND);
 
             var address = new Address
             {
@@ -32,35 +33,27 @@ namespace ConnectUs.Service.Services.Concrete
                 Value = dto.Value
             };
 
-            _addressRepository.Save(address);
+            await _addressRepository.SaveAsync(address);
             return true;
         }
 
-        public bool Delete(string token, long id)
+        public async Task<bool> DeleteAsync(string token, long id)
         {
             var authId = ExtractAuthIdFromToken(token);
-            var auth = _authRepository.FindByIdAsync(authId) ?? throw new GeneralException(ErrorType.AUTH_NOT_FOUND);
+            var auth = await _authRepository.FindByIdAsync(authId) ?? throw new GeneralException(ErrorType.AUTH_NOT_FOUND);
 
-            var address = _addressRepository.FindById(id) ?? throw new GeneralException(ErrorType.CONTACT_NOT_FOUND);
+            var address = await _addressRepository.FindByIdAsync(id) ?? throw new GeneralException(ErrorType.CONTACT_NOT_FOUND);
 
-            _addressRepository.Delete(address);
-            return true;
+            try
+            {
+                await _addressRepository.DeleteAsync(address);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                throw new GeneralException(ErrorType.INTERNAL_SERVER_ERROR);
+            }
         }
-
-        public bool Update(AddressUpdateRequestDTO dto)
-        {
-            var authId = ExtractAuthIdFromToken(dto.token);
-            var auth = _authRepository.FindByIdAsync(authId) ?? throw new GeneralException(ErrorType.AUTH_NOT_FOUND);
-
-            var address = _addressRepository.FindById(dto.adressId) ?? throw new GeneralException(ErrorType.CONTACT_NOT_FOUND);
-
-            address.Description = dto.description;
-            address.Value = dto.value;
-
-            _addressRepository.Save(address);
-            return true;
-        }
-
         public List<Address> FindAll()
         {
             return _addressRepository.FindAll();
