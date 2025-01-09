@@ -5,9 +5,24 @@ using ConnectUs.Data.Repositories.Concretes;
 using ConnectUs.Service.Services.Abstractions;
 using ConnectUs.Service.Services.Concrete;
 using ConnectUs.Services;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Türkçe kültür ayarlarý
+var cultureInfo = new CultureInfo("tr-TR");
+CultureInfo.DefaultThreadCurrentCulture = cultureInfo;
+CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
+
+// Türkçe kültür için RequestLocalization yapýlandýrmasý
+var localizationOptions = new RequestLocalizationOptions
+{
+    DefaultRequestCulture = new RequestCulture(cultureInfo),
+    SupportedCultures = new List<CultureInfo> { cultureInfo },
+    SupportedUICultures = new List<CultureInfo> { cultureInfo }
+};
 
 // Loglama yapýlandýrmasý
 builder.Logging.ClearProviders();
@@ -87,6 +102,9 @@ app.UseStaticFiles();
 
 // CORS'u etkinleþtir
 app.UseCors("AllowSpecificOrigin");
+
+// Türkçe kültürü etkinleþtir
+app.UseRequestLocalization(localizationOptions);
 
 app.UseRouting();
 app.UseAuthorization();

@@ -20,7 +20,7 @@ namespace ConnectUs.Entity.Entities
         public string Description { get; set; }
 
         // İçeriği tutacak alan (Lob tipi karşılığı String)
-        [Column(TypeName = "TEXT")] // Veritabanında TEXT türünde bir sütun oluşturulmasını sağlar
+        [Column(TypeName = "NVARCHAR(MAX)")] // Veritabanında TEXT türünde bir sütun oluşturulmasını sağlar
         public string Value { get; set; }
 
         // Parametresiz constructor (Entity Framework Core'da zaten otomatik olarak oluşur)

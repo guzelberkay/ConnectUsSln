@@ -24,12 +24,7 @@ namespace ConnectUs.Data.Context
         public DbSet<Address> Address { get; set; }
 
         public DbSet<OurServices> OurServices { get; set; }
-/**
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            optionsBuilder.UseMySql("server=77.245.159.112\\localhost:3306;database=connectusdb;user=connectus;password=Cortexsoft2025.")
-        }
-*/
+
         protected override void  OnModelCreating(ModelBuilder builder)
         {
             builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());

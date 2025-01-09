@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ConnectUs.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250104202923_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20250109125326_Initial")]
+    partial class Initial
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -34,7 +34,7 @@ namespace ConnectUs.Data.Migrations
 
                     b.Property<string>("Content")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("NVARCHAR(MAX)");
 
                     b.HasKey("Id");
 
@@ -55,7 +55,7 @@ namespace ConnectUs.Data.Migrations
 
                     b.Property<string>("Value")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("NVARCHAR(MAX)");
 
                     b.HasKey("Id");
 
@@ -99,7 +99,7 @@ namespace ConnectUs.Data.Migrations
 
                     b.Property<string>("CommentContent")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("NVARCHAR(MAX)");
 
                     b.Property<string>("CompanyName")
                         .IsRequired()
@@ -196,7 +196,7 @@ namespace ConnectUs.Data.Migrations
 
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("NVARCHAR(MAX)");
 
                     b.Property<string>("Employer")
                         .IsRequired()

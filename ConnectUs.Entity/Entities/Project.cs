@@ -25,7 +25,7 @@ namespace ConnectUs.Entity.Entities
         public string Date { get; set; }
 
         // Description (Kapsam)
-        [Column(TypeName = "TEXT")]  // TEXT türünde sütun oluşturulmasını sağlar
+        [Column(TypeName = "NVARCHAR(MAX)")]
         public string Description { get; set; }
 
         // Parametresiz constructor

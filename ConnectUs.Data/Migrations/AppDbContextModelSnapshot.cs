@@ -32,7 +32,7 @@ namespace ConnectUs.Data.Migrations
 
                     b.Property<string>("Content")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("NVARCHAR(MAX)");
 
                     b.HasKey("Id");
 
@@ -53,7 +53,7 @@ namespace ConnectUs.Data.Migrations
 
                     b.Property<string>("Value")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("NVARCHAR(MAX)");
 
                     b.HasKey("Id");
 
@@ -97,7 +97,7 @@ namespace ConnectUs.Data.Migrations
 
                     b.Property<string>("CommentContent")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("NVARCHAR(MAX)");
 
                     b.Property<string>("CompanyName")
                         .IsRequired()
@@ -194,7 +194,7 @@ namespace ConnectUs.Data.Migrations
 
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("NVARCHAR(MAX)");
 
                     b.Property<string>("Employer")
                         .IsRequired()

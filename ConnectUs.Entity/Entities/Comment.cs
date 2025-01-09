@@ -33,7 +33,7 @@ namespace ConnectUs.Entity.Entities
         public string Email { get; set; }
 
         // Comment content
-        [Column(TypeName = "TEXT")] // Veritabanında TEXT türünde bir sütun oluşturulmasını sağlar
+        [Column(TypeName = "NVARCHAR(MAX)")]
         public string CommentContent { get; set; }
 
         // Status - Enum tipi
